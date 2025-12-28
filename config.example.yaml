@@ -3,21 +3,25 @@
 
 repositories:
   # Example app configurations
+  # git clone https://github.com/nuonco/example-app-configs
   - label: examples
     path: /Users/username/dev/nuonco/example-app-configs
     description: Example app configurations for Nuon users
 
   # Nuon documentation
+  # git clone https://github.com/nuonco/nuon
   - label: nuon-docs
     path: /Users/username/dev/nuonco/nuon/docs
     description: Official Nuon documentation
 
   # BYOC application example
+  # git clone https://github.com/nuonco/byoc
   - label: byoc-app
     path: /Users/username/dev/nuonco/nuon-byoc
     description: BYOC (Bring Your Own Cloud) application example
 
   # Split plane example
+  # git clone https://github.com/nuonco/acme-ch
   - label: split-plane
     path: /Users/username/dev/nuonco/split-plane
     description: Split plane example application

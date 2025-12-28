@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "nuon": {
+      "type": "stdio",
+      "command": "/absolute/path/to/nuon-mcp/venv/bin/python",
+      "args": ["/absolute/path/to/nuon-mcp/server.py"],
+      "description": "Nuon repositories MCP server - provides access to example configs, docs, and reference apps"
+    }
+  }
+}

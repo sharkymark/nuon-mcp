@@ -1,0 +1,28 @@
+# Nuon MCP Server Configuration
+# Copy this file to config.yaml and update the paths to match your local setup
+
+repositories:
+  # Example app configurations
+  - label: examples
+    path: /Users/username/dev/nuonco/example-app-configs
+    description: Example app configurations for Nuon users
+
+  # Nuon documentation
+  - label: nuon-docs
+    path: /Users/username/dev/nuonco/nuon/docs
+    description: Official Nuon documentation
+
+  # BYOC application example
+  - label: byoc-app
+    path: /Users/username/dev/nuonco/nuon-byoc
+    description: BYOC (Bring Your Own Cloud) application example
+
+  # Split plane example
+  - label: split-plane
+    path: /Users/username/dev/nuonco/split-plane
+    description: Split plane example application
+
+# Add more repositories as needed by following the same format:
+#  - label: my-repo
+#    path: /path/to/repository
+#    description: Description of what this repo contains

@@ -21,11 +21,11 @@ This was just showing you **HOW** the conversation between Claude and the server
 
 ```
 ✓ example-apps
-  Path: /Users/markmilligan/.../example-app-configs
+  Path: /Users/username/.../example-app-configs
   Files: 3,976
 
 ✓ nuon-docs
-  Path: /Users/markmilligan/nuon/nuon/docs
+  Path: /path/to/nuon/docs
   Files: 469
 ```
 
@@ -46,17 +46,17 @@ Claude calls your server and gets back:
 # Available Repository Sources
 
 ## example-apps
-- **Path**: /Users/markmilligan/.../example-app-configs
+- **Path**: /Users/username/.../example-app-configs
 - **Description**: Example app configurations for Nuon users
 - **Files**: 3,976
 
 ## nuon-docs
-- **Path**: /Users/markmilligan/nuon/nuon/docs
+- **Path**: /path/to/nuon/docs
 - **Description**: Official Nuon documentation
 - **Files**: 469
 
 ## split-plane-clickhouse-app
-- **Path**: /Users/markmilligan/.../acme-ch
+- **Path**: /path/to/acme-ch
 - **Description**: Split plane ClickHouse example application
 - **Files**: 239
 ```

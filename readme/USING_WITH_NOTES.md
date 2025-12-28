@@ -12,24 +12,24 @@ Just edit `config.yaml` and add your notes folder:
 repositories:
   # Your existing Nuon repos
   - label: example-apps
-    path: /Users/markmilligan/documents/dev_and_debug/src/nuonco/example-app-configs
+    path: /path/to/example-app-configs
     description: Example app configurations for Nuon users
 
   - label: nuon-docs
-    path: /Users/markmilligan/nuon/nuon/docs
+    path: /path/to/nuon/docs
     description: Official Nuon documentation
 
   # ADD YOUR NOTES HERE!
   - label: my-notes
-    path: /Users/markmilligan/Documents/Notes
+    path: /Users/you/Documents/Notes
     description: My personal notes and documentation
 
   - label: obsidian-vault
-    path: /Users/markmilligan/ObsidianVault
+    path: /Users/you/ObsidianVault
     description: My Obsidian knowledge base
 
   - label: work-notes
-    path: /Users/markmilligan/Documents/WorkNotes
+    path: /Users/you/Documents/WorkNotes
     description: Work-related notes and meeting minutes
 ```
 
@@ -254,7 +254,7 @@ But for basic searching, reading, and listing - **the current tools are perfect 
 1. **Edit config.yaml:**
    ```yaml
    - label: my-notes
-     path: /Users/markmilligan/Documents/Notes  # Your actual notes path
+     path: /Users/you/Documents/Notes  # Your actual notes path
      description: My personal notes
    ```
 

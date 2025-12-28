@@ -71,7 +71,7 @@ claude mcp list
 
 **Your Output:**
 ```
-nuon: /Users/markmilligan/.../server.py - ✓ Connected
+nuon: /Users/username/.../server.py - ✓ Connected
 ```
 
 ✅ **This confirms your server is running and Claude can talk to it!**
@@ -84,7 +84,7 @@ ps aux | grep server.py
 
 **Your Output:**
 ```
-markmilligan  30315  ... Python /Users/markmilligan/.../server.py
+username  30315  ... Python /Users/username/.../server.py
 ```
 
 ✅ **This shows the actual Python process running your server!**
@@ -236,7 +236,7 @@ Based on the checks we just ran:
 ✅ **MCP server is registered:** `nuon`
 ✅ **Server is running:** Process ID 30315
 ✅ **Server is connected:** `✓ Connected`
-✅ **Configuration loaded:** `/Users/markmilligan/documents/dev_and_debug/src/mark/nuon-mcp/server.py`
+✅ **Configuration loaded:** `/path/to/nuon-mcp/server.py`
 
 **Your nuon-mcp server is working perfectly!**
 

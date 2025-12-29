@@ -1,10 +1,10 @@
 # Nuon MCP Server
 
-A generic MCP (Model Context Protocol) server that provides Claude with access to multiple local repositories. Built for Nuon but designed to be reusable for any collection of repositories.
+A generic MCP (Model Context Protocol) server that provides Claude or Amp with access to multiple local repositories. Built for Nuon but designed to be reusable for any collection of repositories.
 
 ## What This Does
 
-This MCP server allows Claude to:
+This MCP server allows Claude (or any LLM CLI) to:
 
 - Search across multiple repositories simultaneously
 - Read files from any configured repository
@@ -94,6 +94,14 @@ list all available sources
 ```
 
 You should see all your configured repositories.
+
+### Amp Support
+
+```bash
+amp mcp add nuon -- /absolute/path/to/nuon-mcp/venv/bin/python /absolute/path/to/nuon-mcp/server.py
+```
+
+Then start Amp and test with similar commands as Claude.
 
 ## Configuration
 

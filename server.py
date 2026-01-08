@@ -4,8 +4,6 @@ Nuon MCP Server - Generic MCP server for accessing multiple local repositories
 """
 
 import asyncio
-import json
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -15,13 +13,15 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
+from sources import Source, FileSystemSource, SalesforceSource
+
 
 class RepositoryManager:
     """Manages multiple repository sources"""
 
     def __init__(self, config_path: Path):
         self.config_path = config_path
-        self.repositories = {}
+        self.sources: dict[str, Source] = {}
         self.load_config()
 
     def load_config(self):
@@ -43,46 +43,54 @@ class RepositoryManager:
 
         for repo in config['repositories']:
             label = repo['label']
-            path = Path(repo['path']).expanduser().resolve()
+            source_type = repo.get('type', 'filesystem')
             description = repo.get('description', '')
 
-            if not path.exists():
-                print(f"  ✗ {label}: Path does not exist: {path}", file=sys.stderr)
+            # Auto-detect type: if 'path' field exists, default to filesystem
+            if 'path' in repo and source_type == 'filesystem':
+                source_type = 'filesystem'
+            elif 'type' not in repo and 'path' in repo:
+                source_type = 'filesystem'
+
+            try:
+                if source_type == 'filesystem':
+                    path = repo.get('path')
+                    if not path:
+                        print(f"  ✗ {label}: Missing 'path' field for filesystem source", file=sys.stderr)
+                        continue
+
+                    source = FileSystemSource(label, path, description)
+                    print(f"  ✓ {label}: {source.path} ({source.file_count:,} files)", file=sys.stderr)
+
+                elif source_type == 'salesforce':
+                    objects = repo.get('objects', ['Opportunity', 'Account', 'Contact', 'Lead', 'Task', 'Event'])
+                    source = SalesforceSource(label, description, objects)
+                    print(f"  ✓ {label}: Salesforce ({len(source.objects)} objects)", file=sys.stderr)
+
+                else:
+                    print(f"  ✗ {label}: Unknown source type: {source_type}", file=sys.stderr)
+                    continue
+
+                self.sources[label] = source
+
+            except ValueError as e:
+                print(f"  ✗ {label}: {str(e)}", file=sys.stderr)
+                continue
+            except Exception as e:
+                print(f"  ✗ {label}: Unexpected error: {str(e)}", file=sys.stderr)
                 continue
 
-            if not path.is_dir():
-                print(f"  ✗ {label}: Not a directory: {path}", file=sys.stderr)
-                continue
-
-            # Count files in the repository
-            file_count = sum(1 for _ in path.rglob('*') if _.is_file())
-
-            self.repositories[label] = {
-                'path': path,
-                'description': description,
-                'file_count': file_count
-            }
-
-            print(f"  ✓ {label}: {path} ({file_count:,} files)", file=sys.stderr)
-
-        if not self.repositories:
+        if not self.sources:
             print("\nError: No valid repositories loaded", file=sys.stderr)
             sys.exit(1)
 
-        print(f"\nServer ready. {len(self.repositories)} repositories loaded.\n", file=sys.stderr)
+        print(f"\nServer ready. {len(self.sources)} repositories loaded.\n", file=sys.stderr)
 
-    def get_repo_path(self, label: str) -> Path:
-        """Get repository path by label"""
-        if label not in self.repositories:
+    def get_source(self, label: str) -> Source:
+        """Get source by label"""
+        if label not in self.sources:
             raise ValueError(f"Repository not found: {label}")
-        return self.repositories[label]['path']
-
-    def validate_path(self, repo_path: Path, file_path: Path) -> Path:
-        """Ensure file path is within repository bounds"""
-        resolved = (repo_path / file_path).resolve()
-        if not resolved.is_relative_to(repo_path):
-            raise ValueError(f"Path {file_path} is outside repository bounds")
-        return resolved
+        return self.sources[label]
 
 
 # Initialize repository manager
@@ -214,11 +222,16 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
     try:
         if name == "list_sources":
             result = "# Available Repository Sources\n\n"
-            for label, info in repo_manager.repositories.items():
+            for label, source in repo_manager.sources.items():
+                metadata = await source.get_metadata()
                 result += f"## {label}\n"
-                result += f"- **Path**: {info['path']}\n"
-                result += f"- **Description**: {info['description']}\n"
-                result += f"- **Files**: {info['file_count']:,}\n\n"
+                result += f"- **Type**: {metadata['type']}\n"
+                if metadata['type'] == 'filesystem':
+                    result += f"- **Path**: {metadata['path']}\n"
+                    result += f"- **Files**: {metadata['file_count']:,}\n"
+                elif metadata['type'] == 'salesforce':
+                    result += f"- **Objects**: {', '.join(metadata['objects'])}\n"
+                result += f"- **Description**: {metadata['description']}\n\n"
             return [TextContent(type="text", text=result)]
 
         elif name == "search_all":
@@ -226,8 +239,8 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             case_sensitive = arguments.get("case_sensitive", False)
 
             results = []
-            for label, info in repo_manager.repositories.items():
-                result = await search_repository(info['path'], query, case_sensitive)
+            for label, source in repo_manager.sources.items():
+                result = await source.search(query, case_sensitive)
                 if result:
                     results.append(f"## Results from {label}:\n{result}")
 
@@ -241,8 +254,8 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             query = arguments["query"]
             case_sensitive = arguments.get("case_sensitive", False)
 
-            repo_path = repo_manager.get_repo_path(label)
-            result = await search_repository(repo_path, query, case_sensitive)
+            source = repo_manager.get_source(label)
+            result = await source.search(query, case_sensitive)
 
             if result:
                 return [TextContent(type="text", text=f"# Results from {label}:\n{result}")]
@@ -253,37 +266,16 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             label = arguments["label"]
             file_path = arguments["path"]
 
-            repo_path = repo_manager.get_repo_path(label)
-            full_path = repo_manager.validate_path(repo_path, Path(file_path))
-
-            if not full_path.exists():
-                return [TextContent(type="text", text=f"File not found: {file_path}")]
-
-            if not full_path.is_file():
-                return [TextContent(type="text", text=f"Not a file: {file_path}")]
-
-            try:
-                content = full_path.read_text()
-                return [TextContent(
-                    type="text",
-                    text=f"# {label}:{file_path}\n\n```\n{content}\n```"
-                )]
-            except UnicodeDecodeError:
-                return [TextContent(type="text", text=f"Cannot read binary file: {file_path}")]
+            source = repo_manager.get_source(label)
+            content = await source.read_file(file_path)
+            return [TextContent(type="text", text=content)]
 
         elif name == "list_files":
             label = arguments["label"]
             pattern = arguments.get("pattern", "*")
 
-            repo_path = repo_manager.get_repo_path(label)
-
-            if "**" in pattern:
-                files = sorted(repo_path.rglob(pattern))
-            else:
-                files = sorted(repo_path.glob(pattern))
-
-            # Filter to only files and get relative paths
-            file_list = [str(f.relative_to(repo_path)) for f in files if f.is_file()]
+            source = repo_manager.get_source(label)
+            file_list = await source.list_files(pattern)
 
             if file_list:
                 result = f"# Files in {label} matching '{pattern}':\n\n"
@@ -297,17 +289,8 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             max_depth = arguments.get("max_depth", 3)
             subpath = arguments.get("path", "")
 
-            repo_path = repo_manager.get_repo_path(label)
-
-            if subpath:
-                start_path = repo_manager.validate_path(repo_path, Path(subpath))
-            else:
-                start_path = repo_path
-
-            if not start_path.exists():
-                return [TextContent(type="text", text=f"Path not found: {subpath}")]
-
-            tree = build_directory_tree(start_path, repo_path, max_depth)
+            source = repo_manager.get_source(label)
+            tree = await source.get_tree(subpath, max_depth)
             result = f"# Directory tree for {label}"
             if subpath:
                 result += f" (starting from {subpath})"
@@ -320,84 +303,6 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
 
     except Exception as e:
         return [TextContent(type="text", text=f"Error: {str(e)}")]
-
-
-async def search_repository(repo_path: Path, query: str, case_sensitive: bool = False) -> str:
-    """Search repository using ripgrep"""
-    cmd = ["rg", "--json"]
-
-    if not case_sensitive:
-        cmd.append("-i")
-
-    cmd.extend([query, str(repo_path)])
-
-    try:
-        process = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-
-        if process.returncode != 0 and process.returncode != 1:
-            # returncode 1 means no matches, which is fine
-            return ""
-
-        # Parse ripgrep JSON output
-        results = []
-        for line in stdout.decode().split('\n'):
-            if not line:
-                continue
-            try:
-                data = json.loads(line)
-                if data.get('type') == 'match':
-                    path = data['data']['path']['text']
-                    line_num = data['data']['line_number']
-                    text = data['data']['lines']['text'].strip()
-                    results.append(f"{path}:{line_num}: {text}")
-            except json.JSONDecodeError:
-                continue
-
-        if results:
-            # Limit to first 50 matches
-            if len(results) > 50:
-                results = results[:50]
-                results.append(f"\n... ({len(results) - 50} more matches omitted)")
-            return "\n".join(results)
-
-        return ""
-
-    except FileNotFoundError:
-        return "Error: ripgrep (rg) not found. Please install ripgrep."
-
-
-def build_directory_tree(path: Path, repo_path: Path, max_depth: int, current_depth: int = 0, prefix: str = "") -> str:
-    """Build a visual directory tree"""
-    if current_depth >= max_depth:
-        return ""
-
-    try:
-        entries = sorted(path.iterdir(), key=lambda x: (not x.is_dir(), x.name))
-    except PermissionError:
-        return f"{prefix}[Permission Denied]"
-
-    tree = []
-    for i, entry in enumerate(entries):
-        is_last = i == len(entries) - 1
-        current_prefix = "└── " if is_last else "├── "
-        next_prefix = prefix + ("    " if is_last else "│   ")
-
-        rel_path = entry.relative_to(repo_path)
-
-        if entry.is_dir():
-            tree.append(f"{prefix}{current_prefix}{entry.name}/")
-            subtree = build_directory_tree(entry, repo_path, max_depth, current_depth + 1, next_prefix)
-            if subtree:
-                tree.append(subtree)
-        else:
-            tree.append(f"{prefix}{current_prefix}{entry.name}")
-
-    return "\n".join(tree)
 
 
 async def main():

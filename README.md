@@ -1,6 +1,6 @@
 # Nuon MCP Server
 
-A generic MCP (Model Context Protocol) server that provides Claude or Amp with access to multiple local repositories. Built for Nuon but designed to be reusable for any collection of repositories.
+A generic MCP (Model Context Protocol) server that provides Claude or Amp with access to multiple local repositories and Salesforce data. Built for Nuon but designed to be reusable for any collection of repositories.
 
 ## What This Does
 
@@ -11,8 +11,9 @@ This MCP server allows Claude (or any LLM CLI) to:
 - List files matching patterns
 - Explore directory structures
 - Reference actual code and documentation during conversations
+- **Search and read Salesforce data** (Opportunities, Accounts, Contacts, Leads, etc.)
 
-Instead of Claude guessing or using potentially outdated training data, it can fetch live, accurate information from your actual repositories.
+Instead of Claude guessing or using potentially outdated training data, it can fetch live, accurate information from your actual repositories and Salesforce org.
 
 ## Prerequisites
 
@@ -121,6 +122,30 @@ Each repository in `config.yaml` has three fields:
 
 You can add as many repositories as needed - there's no hard limit.
 
+### Salesforce Configuration
+
+Add a Salesforce source to `config.yaml`:
+
+```yaml
+  - type: salesforce
+    label: my-salesforce
+    description: Salesforce production org
+    objects:
+      - Opportunity
+      - Account
+      - Contact
+      - Lead
+      - Task
+      - Event
+```
+
+**Required environment variables:**
+- `SF_CLIENT_ID` - Your Connected App client ID
+- `SF_CLIENT_SECRET` - Your Connected App client secret
+- `SF_LOGIN_URL` - `https://login.salesforce.com` (or `https://test.salesforce.com` for sandbox)
+
+Once configured, you can search across both filesystem repositories and Salesforce data simultaneously.
+
 ### Project vs Global Configuration
 
 You have two options for sharing this MCP server with a team:
@@ -179,6 +204,16 @@ Compare the Coder and BYOC Nuon configs and explain the differences
 Find all examples that use RDS and show me the patterns
 ```
 
+### Search Across Salesforce and Files
+
+```
+Search everywhere for "Q4 planning" - check both meeting notes and opportunities
+```
+
+```
+Show me all Acme Corp references in my notes and Salesforce
+```
+
 ## Tools Available
 
 The server exposes these tools to Claude:
@@ -195,8 +230,9 @@ The server exposes these tools to Claude:
 ## Architecture
 
 - **Language**: Python 3
-- **Dependencies**: MCP SDK, PyYAML
-- **Search**: Uses ripgrep for fast, efficient searching
+- **Dependencies**: MCP SDK, PyYAML, aiohttp (for Salesforce)
+- **Search**: Uses ripgrep for filesystem repositories, SOQL for Salesforce
+- **Source Types**: Filesystem repositories and Salesforce orgs
 - **Security**: Read-only operations, path validation prevents directory traversal
 
 ## Troubleshooting

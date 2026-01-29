@@ -86,6 +86,22 @@ claude mcp add --scope user --transport stdio nuon -- /absolute/path/to/nuon-mcp
 
 Replace `/absolute/path/to/nuon-mcp/` with the actual path to your installation.
 
+#### Adding Salesforce Environment Variables
+
+If you've configured Salesforce in your `config.yaml`, you need to pass the environment variables when adding the MCP server:
+
+```bash
+claude mcp add -e SF_CLIENT_ID=your_client_id \
+  -e SF_CLIENT_SECRET=your_client_secret \
+  -e SF_LOGIN_URL=https://login.salesforce.com \
+  --scope user --transport stdio nuon -- \
+  /absolute/path/to/nuon-mcp/venv/bin/python /absolute/path/to/nuon-mcp/server.py
+```
+
+Replace `your_client_id` and `your_client_secret` with your actual Salesforce Connected App credentials.
+
+**Note:** If you've already added the MCP server without environment variables, remove it first with `claude mcp remove nuon -s user` before re-adding with the `-e` flags.
+
 ### 4. Verify
 
 Start a new Claude session and try:

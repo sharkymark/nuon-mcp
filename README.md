@@ -75,13 +75,13 @@ repositories:
 Add the server to your Claude configuration (use the Python from your virtual environment):
 
 ```bash
-claude mcp add --scope user --transport stdio nuon -- /absolute/path/to/nuon-mcp/venv/bin/python /absolute/path/to/nuon-mcp/server.py
+claude mcp add --scope user --transport stdio nuon-local -- /absolute/path/to/nuon-mcp/venv/bin/python /absolute/path/to/nuon-mcp/server.py
 ```
 
 **On Windows:**
 
 ```bash
-claude mcp add --scope user --transport stdio nuon -- /absolute/path/to/nuon-mcp/venv/Scripts/python.exe /absolute/path/to/nuon-mcp/server.py
+claude mcp add --scope user --transport stdio nuon-local -- /absolute/path/to/nuon-mcp/venv/Scripts/python.exe /absolute/path/to/nuon-mcp/server.py
 ```
 
 Replace `/absolute/path/to/nuon-mcp/` with the actual path to your installation.
@@ -94,7 +94,7 @@ If you've configured Salesforce in your `config.yaml`, you need to pass the envi
 claude mcp add -e SF_CLIENT_ID=your_client_id \
   -e SF_CLIENT_SECRET=your_client_secret \
   -e SF_LOGIN_URL=https://login.salesforce.com \
-  --scope user --transport stdio nuon -- \
+  --scope user --transport stdio nuon-local -- \
   /absolute/path/to/nuon-mcp/venv/bin/python /absolute/path/to/nuon-mcp/server.py
 ```
 
